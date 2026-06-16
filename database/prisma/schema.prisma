@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String             @id @default(uuid())
+  clerkId   String             @unique
+  email     String             @unique
+  name      String?
+  sessions  InterviewSession[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model InterviewSession {
+  id              String       @id @default(uuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            String
+  experienceLevel String
+  style           String       @default("Standard")
+  status          String       @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  questions       Question[]
+  evaluation      Evaluation?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model Question {
+  id        String           @id @default(uuid())
+  sessionId String
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  category  String
+  text      String
+  order     Int
+  response  Response?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model Response {
+  id         String   @id @default(uuid())
+  questionId String   @unique
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  transcript String
+  audioUrl   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Evaluation {
+  id                 String           @id @default(uuid())
+  sessionId          String           @unique
+  session            InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  technicalScore     Float
+  communicationScore Float
+  completenessScore  Float
+  overallScore       Float
+  feedback           String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
