@@ -20,6 +20,7 @@ import {
   Target,
   Compass,
   Building2,
+  Printer,
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { triggerConfetti } from "@/lib/confetti";
@@ -195,6 +196,9 @@ export default function EvaluationDashboard() {
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
+          <Button onClick={() => window.print()} variant="outline" className="gap-2">
+            <Printer className="w-4 h-4" /> Print / PDF Report
+          </Button>
           <Button onClick={() => router.push("/dashboard")} variant="outline" className="gap-2">
             <ArrowLeft className="w-4 h-4" /> Dashboard
           </Button>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Mic, MicOff, Send, Loader2, Clock, AlertTriangle, CornerDownRight, CheckCircle2 } from "lucide-react";
+import { Mic, MicOff, Send, Loader2, Clock, AlertTriangle, CornerDownRight, CheckCircle2, Volume2, VolumeX } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { triggerConfetti } from "@/lib/confetti";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -142,6 +142,38 @@ export default function InterviewRoom() {
   const [evalMessage, setEvalMessage] = useState("Transcribing answers & validating response completeness...");
   const [timerExpired, setTimerExpired] = useState(false);
   const [isProbing, setIsProbing] = useState(false);
+  const [isSpeakingQuestion, setIsSpeakingQuestion] = useState(false);
+
+  const toggleSpeakQuestion = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      toast.warning("Text-to-speech audio is not supported in this browser.");
+      return;
+    }
+
+    if (isSpeakingQuestion) {
+      window.speechSynthesis.cancel();
+      setIsSpeakingQuestion(false);
+    } else {
+      window.speechSynthesis.cancel();
+      const currentQ = session?.questions[currentQuestionIndex];
+      if (!currentQ) return;
+      const utterance = new SpeechSynthesisUtterance(currentQ.text);
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      utterance.onend = () => setIsSpeakingQuestion(false);
+      utterance.onerror = () => setIsSpeakingQuestion(false);
+      window.speechSynthesis.speak(utterance);
+      setIsSpeakingQuestion(true);
+    }
+  };
+
+  // Cancel speech playback when question changes
+  useEffect(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeakingQuestion(false);
+    }
+  }, [currentQuestionIndex]);
 
   useEffect(() => {
     if (
@@ -495,16 +527,37 @@ export default function InterviewRoom() {
         {/* Question Card */}
         <Card className="shadow-md mb-6 border-blue-100">
           <CardHeader className="bg-blue-50/50 rounded-t-xl border-b border-blue-100">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">
-                {currentQuestion.category} Question
-              </span>
-              <DifficultyBadge difficulty={currentQuestion.difficulty} />
-              {currentQuestion.isFollowUp && (
-                <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700">
-                  Follow-up Question
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">
+                  {currentQuestion.category} Question
                 </span>
-              )}
+                <DifficultyBadge difficulty={currentQuestion.difficulty} />
+                {currentQuestion.isFollowUp && (
+                  <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700">
+                    Follow-up Question
+                  </span>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={toggleSpeakQuestion}
+                className="text-xs gap-1.5 h-7 px-2.5 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+              >
+                {isSpeakingQuestion ? (
+                  <>
+                    <VolumeX className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                    <span>Stop Audio</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Listen to Question</span>
+                  </>
+                )}
+              </Button>
             </div>
             <CardTitle className="text-xl leading-relaxed text-neutral-800">
               {currentQuestion.text}

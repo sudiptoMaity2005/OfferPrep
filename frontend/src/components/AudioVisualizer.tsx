@@ -127,3 +127,4 @@ export function AudioVisualizer({ isRecording }: AudioVisualizerProps) {
     </div>
   );
 }
+
