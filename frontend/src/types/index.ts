@@ -108,6 +108,8 @@ export interface InterviewHistoryItem {
 }
 
 export interface AnalyticsData {
+  tier?: string;
+  interviewCredits?: number;
   totalSessions: number;
   completedSessions: number;
   averageOverallScore: number;

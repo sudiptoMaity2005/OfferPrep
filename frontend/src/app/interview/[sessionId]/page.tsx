@@ -12,6 +12,8 @@ import { Mic, MicOff, Send, Loader2, Clock, AlertTriangle, CornerDownRight, Chec
 import { apiClient } from "@/lib/api-client";
 import { triggerConfetti } from "@/lib/confetti";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AudioVisualizer } from "@/components/AudioVisualizer";
+import { TechnicalAnswerInput } from "@/components/TechnicalAnswerInput";
 import type { InterviewSession, QuestionDifficulty } from "@/types";
 
 // --- Difficulty Badge Component ---
@@ -136,6 +138,8 @@ export default function InterviewRoom() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evalProgress, setEvalProgress] = useState(15);
+  const [evalMessage, setEvalMessage] = useState("Transcribing answers & validating response completeness...");
   const [timerExpired, setTimerExpired] = useState(false);
   const [isProbing, setIsProbing] = useState(false);
 
@@ -364,34 +368,73 @@ export default function InterviewRoom() {
               Click below to generate your detailed performance evaluation, readiness score, and question-by-question breakdown.
             </p>
           </CardContent>
-          <CardFooter className="flex justify-center pb-8">
-            <Button
-              size="lg"
-              disabled={isEvaluating}
-              onClick={async () => {
-                setIsEvaluating(true);
-                try {
-                  const token = await getToken();
-                  await apiClient.evaluateSession(sessionId, userId || "", token);
-                  toast.success("Evaluation completed!");
-                  router.push(`/evaluation/${sessionId}`);
-                } catch (error) {
-                  const message = error instanceof Error ? error.message : "Evaluation failed. Please try again.";
-                  toast.error(message);
-                } finally {
-                  setIsEvaluating(false);
-                }
-              }}
-            >
-              {isEvaluating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Compiling evaluation report...
-                </>
-              ) : (
-                "Complete Session & View Evaluation"
-              )}
-            </Button>
+          <CardFooter className="flex flex-col items-center pb-8 px-6">
+            {isEvaluating ? (
+              <div className="w-full space-y-3 pt-2 text-left animate-in fade-in duration-300">
+                <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-mono font-medium text-neutral-600 dark:text-neutral-400">
+                    <span className="flex items-center gap-1.5">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                      Calibrating Diagnostics
+                    </span>
+                    <span>{evalProgress}%</span>
+                  </div>
+                  <div className="w-full bg-neutral-200 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-neutral-900 dark:bg-neutral-100 h-1.5 transition-all duration-700 ease-out rounded-full"
+                      style={{ width: `${evalProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+                    {evalMessage}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <Button
+                size="lg"
+                onClick={async () => {
+                  setIsEvaluating(true);
+                  setEvalProgress(15);
+                  setEvalMessage("Transcribing answers & validating response completeness...");
+
+                  const stages = [
+                    { progress: 35, message: "Calibrating technical accuracy against engineering rubrics..." },
+                    { progress: 60, message: "Evaluating communication structure & trade-off clarity..." },
+                    { progress: 80, message: "Synthesizing skill gap matrix & readiness score..." },
+                    { progress: 95, message: "Finalizing comprehensive candidate debrief..." },
+                  ];
+
+                  let stageIdx = 0;
+                  const stageInterval = setInterval(() => {
+                    if (stageIdx < stages.length) {
+                      setEvalProgress(stages[stageIdx].progress);
+                      setEvalMessage(stages[stageIdx].message);
+                      stageIdx++;
+                    }
+                  }, 2800);
+
+                  try {
+                    const token = await getToken();
+                    await apiClient.evaluateSession(sessionId, userId || "", token);
+                    clearInterval(stageInterval);
+                    setEvalProgress(100);
+                    setEvalMessage("Evaluation ready! Opening report...");
+                    toast.success("Evaluation completed!");
+                    setTimeout(() => {
+                      router.push(`/evaluation/${sessionId}`);
+                    }, 500);
+                  } catch (error) {
+                    clearInterval(stageInterval);
+                    const message = error instanceof Error ? error.message : "Evaluation failed. Please try again.";
+                    toast.error(message);
+                    setIsEvaluating(false);
+                  }
+                }}
+              >
+                Complete Session & View Evaluation
+              </Button>
+            )}
           </CardFooter>
         </Card>
       </div>
@@ -468,23 +511,25 @@ export default function InterviewRoom() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
               <label className="text-sm font-medium text-neutral-700">Your Answer</label>
-              <Button
-                variant={isRecording ? "destructive" : "outline"}
-                size="sm"
-                onClick={toggleRecording}
-                className="flex items-center gap-2"
-              >
-                {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                {isRecording ? "Stop Recording" : "Use Voice Input"}
-              </Button>
+              <div className="flex items-center gap-2.5">
+                <AudioVisualizer isRecording={isRecording} />
+                <Button
+                  variant={isRecording ? "destructive" : "outline"}
+                  size="sm"
+                  onClick={toggleRecording}
+                  className="flex items-center gap-2"
+                >
+                  {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  {isRecording ? "Stop Recording" : "Use Voice Input"}
+                </Button>
+              </div>
             </div>
-            <Textarea
-              className="min-h-[220px] text-base p-4"
-              placeholder="Type your answer here, or paste any code you've written. Alternatively, click 'Use Voice Input' to speak your answer."
+            <TechnicalAnswerInput
               value={transcript}
-              onChange={(e) => setTranscript(e.target.value)}
+              onChange={setTranscript}
+              disabled={isSubmitting || isProbing}
             />
           </CardContent>
           <CardFooter className="bg-neutral-50 dark:bg-neutral-900/50 p-6 flex flex-wrap items-center justify-between gap-3 rounded-b-xl border-t border-neutral-100 dark:border-neutral-800">

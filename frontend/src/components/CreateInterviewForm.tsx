@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
@@ -24,6 +24,25 @@ export function CreateInterviewForm() {
   const [showResumeInput, setShowResumeInput] = useState(false);
   const [isAdaptive, setIsAdaptive] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
+  const [tier, setTier] = useState<string>("FREE");
+
+  useEffect(() => {
+    if (!userId) return;
+    getToken().then((token) => {
+      apiClient
+        .fetchAnalytics(userId, token)
+        .then((data) => {
+          if (typeof data.interviewCredits === "number") {
+            setCredits(data.interviewCredits);
+          }
+          if (data.tier) {
+            setTier(data.tier);
+          }
+        })
+        .catch(() => {});
+    });
+  }, [userId, getToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,9 +86,16 @@ export function CreateInterviewForm() {
   return (
     <Card className="w-full max-w-lg mx-auto shadow-md border-neutral-200 dark:border-neutral-800">
       <CardHeader>
-        <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-          <Sliders className="w-3.5 h-3.5" />
-          <span>Session Parameters</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Session Parameters</span>
+          </div>
+          {credits !== null && (
+            <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700">
+              {tier === "PRO" ? "Pro Unlimited" : `${credits} / 5 Credits`}
+            </span>
+          )}
         </div>
         <CardTitle className="text-2xl font-bold">New Interview Session</CardTitle>
         <CardDescription>

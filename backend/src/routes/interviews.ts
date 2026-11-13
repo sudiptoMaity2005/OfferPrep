@@ -27,6 +27,8 @@ router.get("/analytics", async (req, res) => {
     const user = await prisma.user.findUnique({ where: { clerkId: String(clerkId) } });
     if (!user) {
       return res.status(200).json({
+        tier: "FREE",
+        interviewCredits: 5,
         totalSessions: 0,
         completedSessions: 0,
         averageOverallScore: 0,
@@ -99,6 +101,8 @@ router.get("/analytics", async (req, res) => {
     }));
 
     return res.status(200).json({
+      tier: user.tier,
+      interviewCredits: user.interviewCredits,
       totalSessions: sessions.length,
       completedSessions: total,
       averageOverallScore: avgOverall,
@@ -175,6 +179,14 @@ router.post("/create", aiRateLimiter, validateBody(createInterviewSchema), async
       });
     }
 
+    // Quota guard: Free tier gets 5 full mock simulations
+    if (user.tier === "FREE" && user.interviewCredits <= 0) {
+      return res.status(403).json({
+        error: "Simulation quota reached. You have completed all 5 free mock interviews. Upgrade to Pro for unlimited sessions.",
+        code: "QUOTA_EXCEEDED",
+      });
+    }
+
     // 2. Generate questions from Gemini AI (incorporating company and resume context)
     const generatedQuestions = await generateInterviewQuestions(
       role,
@@ -210,6 +222,14 @@ router.post("/create", aiRateLimiter, validateBody(createInterviewSchema), async
         questions: true,
       },
     });
+
+    // Deduct 1 credit for Free tier candidates
+    if (user.tier === "FREE") {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { interviewCredits: { decrement: 1 } },
+      });
+    }
 
     return res.status(200).json({ sessionId: session.id, session });
   } catch (error: any) {
