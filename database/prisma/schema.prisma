@@ -25,23 +25,37 @@ model InterviewSession {
   role            String
   experienceLevel String
   style           String       @default("Standard")
+  company         String?      @default("General") // Google, Amazon, Meta, Microsoft, General
+  resumeText      String?      // Optional resume text for personalized questions
+  isAdaptive      Boolean      @default(false)
+  timePerQuestion Int          @default(3) // minutes per question (0 = no limit)
   status          String       @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
   questions       Question[]
   evaluation      Evaluation?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Question {
-  id        String           @id @default(uuid())
-  sessionId String
-  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  category  String
-  text      String
-  order     Int
-  response  Response?
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  id               String           @id @default(uuid())
+  sessionId        String
+  session          InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  category         String
+  text             String
+  difficulty       String           @default("MEDIUM") // EASY, MEDIUM, HARD
+  order            Int
+  isFollowUp       Boolean          @default(false)
+  parentQuestionId String?
+  response         Response?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([sessionId])
+  @@index([sessionId, order])
 }
 
 model Response {
@@ -62,7 +76,10 @@ model Evaluation {
   communicationScore Float
   completenessScore  Float
   overallScore       Float
+  readinessScore     Float?           // Placement readiness benchmark (0-100)
   feedback           String
+  questionFeedback   Json?            // Array of { questionIndex, score, verdict, feedback }
+  skillGaps          Json?            // Array of { topic: string, status: "Proficient" | "Needs Practice", recommendation: string }
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 }

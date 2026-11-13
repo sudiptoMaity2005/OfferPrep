@@ -56,14 +56,19 @@ router.post('/clerk', express.raw({ type: 'application/json' }), async (req: Req
     const name = `${evt.data.first_name || ''} ${evt.data.last_name || ''}`.trim();
     
     try {
-      await prisma.user.create({
-        data: {
+      await prisma.user.upsert({
+        where: { clerkId: id },
+        update: {
+          email: email,
+          name: name,
+        },
+        create: {
           clerkId: id,
           email: email,
           name: name,
         },
       });
-      console.log(`User ${id} successfully created in the database.`);
+      console.log(`User ${id} successfully synced in the database.`);
     } catch (error) {
       console.error('Error saving user to DB:', error);
       res.status(500).json({ error: 'Error saving user to DB' });

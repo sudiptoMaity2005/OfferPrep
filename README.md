@@ -50,30 +50,23 @@ The long-term goal is to create an AI interviewer capable of:
 
 ---
 
-# MVP Scope (Version 1)
+# Release & Feature Status
 
-The first release focuses on validating the interview simulation workflow.
+## Fully Implemented Features (V1 + Production Upgrades)
 
-## Included Features
-
-* User Authentication
-* Role-Based Interview Creation
-* AI Question Generation
-* Audio Recording
-* Speech-to-Text Transcription
-* AI Response Evaluation
-* Results Dashboard
-* Interview History
-
-## Out of Scope for V1
-
-* Resume Analysis
-* Company-Specific Interviews
-* Adaptive Follow-Up Questions
-* Coding Interviews
-* Placement Readiness Score
-* Industry Trend Analysis
-* Video Recording
+* **User Authentication & Sync**: Clerk Auth with Svix webhook signature verification.
+* **Role & Seniority Targeting**: SDE, Frontend, Backend, ML, DevOps, PM (Intern to Lead).
+* **Company-Specific Tracks**: Tailored hiring bars for Google, Amazon (LP & scale), Meta, and Microsoft.
+* **Resume Context Personalization**: Paste resume/project highlights to generate questions challenging your actual tech stack.
+* **Adaptive Follow-Up Probing**: Real-time AI probes that interrogate technical depth based on live answers.
+* **Audio & Speech-to-Text Pipeline**: Web Speech recognition with live transcription.
+* **Configurable Countdown Timer**: 2, 3, 5-minute per-question timers with danger visual warnings.
+* **Deep Diagnostic Evaluation**: Technical Accuracy, Communication Clarity, and Completeness scoring.
+* **Placement Readiness Score & Skill Gap Matrix**: Identifies proficient domains vs areas needing practice.
+* **Question-by-Question Review**: Full candidate answer transcripts side-by-side with individual verdicts.
+* **Historical Performance Analytics**: Recharts trajectory tracking average scores over time.
+* **Architecture & DX**: Centralized typed API client, Zod request body validation, and dual-layer rate limiting.
+* **Dark / Light Theme & Celebratory Confetti**: Next-themes integration and canvas-confetti.
 
 ---
 
